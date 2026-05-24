@@ -41,6 +41,6 @@ class GameRoundGeneratorTest {
         assertEquals(1, mediumCount)
         assertEquals(3, smallCount)
         assertEquals(0, largeCount)
-        assertTrue(round.target in 10..100)
+        assertTrue(round.target in 2..47)
     }
 }

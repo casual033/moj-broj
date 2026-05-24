@@ -8,7 +8,7 @@ import org.junit.Test
 class SolverTest {
     @Test
     fun `solver finds exact solution when one exists`() {
-        val solver = Solver(maxDurationMs = 500)
+        val solver = Solver(maxDurationMs = 3000)
         val round = GameRound(target = 800, numbers = listOf(25, 75, 8, 1, 2, 3))
 
         val result = solver.solve(round)

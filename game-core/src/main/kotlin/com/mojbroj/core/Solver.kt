@@ -5,9 +5,39 @@ import com.mojbroj.core.model.SolverResult
 import kotlin.math.abs
 
 class Solver(
-    private val maxDurationMs: Long = 150L
+    private val maxDurationMs: Long = 1200L
 ) {
-    private data class Node(val value: Int, val expression: String)
+    private data class Node(val value: Int, val expression: Expr)
+
+    private sealed interface Expr {
+        fun precedence(): Int
+        fun render(): String
+    }
+
+    private data class ValueExpr(val value: Int) : Expr {
+        override fun precedence(): Int = 3
+        override fun render(): String = value.toString()
+    }
+
+    private data class BinaryExpr(val op: Char, val left: Expr, val right: Expr) : Expr {
+        override fun precedence(): Int = if (op == '+' || op == '-') 1 else 2
+
+        override fun render(): String {
+            val leftText = renderChild(left, isRight = false)
+            val rightText = renderChild(right, isRight = true)
+            return "$leftText$op$rightText"
+        }
+
+        private fun renderChild(child: Expr, isRight: Boolean): String {
+            val text = child.render()
+            if (child !is BinaryExpr) return text
+            if (child.precedence() < precedence()) return "($text)"
+            if (isRight && child.precedence() == precedence() && (op == '-' || op == '/')) {
+                return "($text)"
+            }
+            return text
+        }
+    }
 
     fun solve(round: GameRound): SolverResult {
         val start = System.nanoTime()
@@ -19,10 +49,11 @@ class Solver(
             distance = abs(round.target - round.numbers.first())
         )
 
-        fun updateBest(value: Int, expression: String) {
+        fun updateBest(value: Int, expression: Expr) {
             val distance = abs(round.target - value)
-            if (distance < best.distance) {
-                best = SolverResult(expression = expression, result = value, distance = distance)
+            val rendered = expression.render()
+            if (distance < best.distance || (distance == best.distance && rendered.length < best.expression.length)) {
+                best = SolverResult(expression = rendered, result = value, distance = distance)
             }
         }
 
@@ -53,7 +84,7 @@ class Solver(
             }
         }
 
-        val initialNodes = round.numbers.map { Node(it, it.toString()) }
+        val initialNodes = round.numbers.map { Node(it, ValueExpr(it)) }
         search(initialNodes)
         return best
     }
@@ -61,20 +92,20 @@ class Solver(
     private fun buildCandidates(a: Node, b: Node): List<Node> {
         val out = mutableListOf<Node>()
 
-        out += Node(a.value + b.value, "(${a.expression}+${b.expression})")
-        out += Node(a.value * b.value, "(${a.expression}*${b.expression})")
+        out += Node(a.value + b.value, BinaryExpr('+', a.expression, b.expression))
+        out += Node(a.value * b.value, BinaryExpr('*', a.expression, b.expression))
 
         if (a.value >= b.value) {
-            out += Node(a.value - b.value, "(${a.expression}-${b.expression})")
+            out += Node(a.value - b.value, BinaryExpr('-', a.expression, b.expression))
         }
         if (b.value >= a.value) {
-            out += Node(b.value - a.value, "(${b.expression}-${a.expression})")
+            out += Node(b.value - a.value, BinaryExpr('-', b.expression, a.expression))
         }
         if (b.value != 0 && a.value % b.value == 0) {
-            out += Node(a.value / b.value, "(${a.expression}/${b.expression})")
+            out += Node(a.value / b.value, BinaryExpr('/', a.expression, b.expression))
         }
         if (a.value != 0 && b.value % a.value == 0) {
-            out += Node(b.value / a.value, "(${b.expression}/${a.expression})")
+            out += Node(b.value / a.value, BinaryExpr('/', b.expression, a.expression))
         }
 
         return out

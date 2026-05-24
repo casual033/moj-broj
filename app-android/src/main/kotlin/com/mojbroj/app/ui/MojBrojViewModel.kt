@@ -26,6 +26,7 @@ enum class AppScreen {
     HOME,
     RULES,
     SETTINGS,
+    ICONS,
     GAME,
     RESULT
 }
@@ -57,7 +58,7 @@ class MojBrojViewModel(
     private val statsRepository: StatsRepository,
     private val roundGenerator: GameRoundGenerator = GameRoundGenerator(),
     private val solutionEvaluator: SolutionEvaluator = SolutionEvaluator(),
-    private val solver: Solver = Solver()
+    private val solver: Solver = Solver(maxDurationMs = 1800L)
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -81,6 +82,10 @@ class MojBrojViewModel(
 
     fun openSettings() {
         _uiState.update { it.copy(screen = AppScreen.SETTINGS) }
+    }
+
+    fun openIconPreview() {
+        _uiState.update { it.copy(screen = AppScreen.ICONS) }
     }
 
     fun updateRoundDuration(value: Int) {

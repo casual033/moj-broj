@@ -1,5 +1,6 @@
 package com.mojbroj.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -29,8 +32,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mojbroj.app.R
 import com.mojbroj.core.DifficultyMode
 import com.mojbroj.core.model.EvaluationStatus
 import java.util.Locale
@@ -44,6 +49,7 @@ fun MojBrojApp(viewModel: MojBrojViewModel) {
             onNewGame = viewModel::startNewGame,
             onRules = viewModel::openRules,
             onSettings = viewModel::openSettings,
+            onIconPreview = viewModel::openIconPreview,
             statsLine = "Partije: ${state.stats.totalGames} | Tačnih: ${state.stats.exactSolutions}",
             difficultyMode = state.difficultyMode,
             onDifficultyChange = viewModel::updateDifficultyMode
@@ -56,6 +62,7 @@ fun MojBrojApp(viewModel: MojBrojViewModel) {
             onDifficultyChange = viewModel::updateDifficultyMode,
             onBack = viewModel::openHome
         )
+        AppScreen.ICONS -> IconPreviewScreen(onBack = viewModel::openHome)
         AppScreen.GAME -> GameScreen(
             state = state,
             onToken = viewModel::appendToken,
@@ -72,6 +79,7 @@ private fun HomeScreen(
     onNewGame: () -> Unit,
     onRules: () -> Unit,
     onSettings: () -> Unit,
+    onIconPreview: () -> Unit,
     statsLine: String,
     difficultyMode: DifficultyMode,
     onDifficultyChange: (DifficultyMode) -> Unit
@@ -79,6 +87,7 @@ private fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -101,6 +110,7 @@ private fun HomeScreen(
         Button(onClick = onNewGame, modifier = Modifier.fillMaxWidth()) { Text("Nova igra") }
         OutlinedButton(onClick = onRules, modifier = Modifier.fillMaxWidth()) { Text("Pravila") }
         OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text("Podešavanja") }
+        OutlinedButton(onClick = onIconPreview, modifier = Modifier.fillMaxWidth()) { Text("Pregled ikonica") }
     }
 }
 
@@ -109,17 +119,63 @@ private fun RulesScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Pravila", style = MaterialTheme.typography.headlineMedium)
-        Text("Cilj je da od ponuđenih 6 brojeva dobiješ ciljani broj.")
-        Text("Set brojeva: 4 mala (1-9), 1 srednji (10/15/20), 1 veliki (25/50/75/100).")
-        Text("Dozvoljeno: +, -, *, / i zagrade.")
-        Text("Svaki broj koristiš najviše jednom.")
-        Text("Deljenje mora biti celobrojno, a međurezultati ne-negativni.")
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onBack) { Text("Nazad") }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Cilj igre", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Od ponuđenih brojeva napravi izraz koji je što bliži ciljanom broju.")
+            }
+        }
+
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Brojevi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("• Standard: 4 mala (1-9), 1 srednji (10/15/20), 1 veliki (25/50/75/100)")
+                Text("• Za decu: 3 mala (1-9), 1 srednji (10/15/20), lakši cilj i samo + / -")
+            }
+        }
+
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Dozvoljeno", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("• Operacije: +, -, *, / i zagrade")
+                Text("• Svaki broj može da se koristi najviše jednom")
+                Text("• Deljenje mora biti celobrojno")
+                Text("• Negativni međurezultati nisu dozvoljeni")
+            }
+        }
+
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Kako se računa rezultat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("• Tačno: pogodio si ciljani broj")
+                Text("• Najbliže: validan izraz, ali nisi pogodio tačno")
+                Text("• Nevalidan unos: kršenje pravila ili neispravan izraz")
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Nazad") }
     }
 }
 
@@ -134,37 +190,110 @@ private fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Podešavanja", style = MaterialTheme.typography.headlineMedium)
-        Text("Težina", style = MaterialTheme.typography.titleMedium)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DifficultyButton(
-                label = "Standard",
-                selected = difficultyMode == DifficultyMode.STANDARD,
-                onClick = { onDifficultyChange(DifficultyMode.STANDARD) }
-            )
-            DifficultyButton(
-                label = "Za decu",
-                selected = difficultyMode == DifficultyMode.KIDS,
-                onClick = { onDifficultyChange(DifficultyMode.KIDS) }
-            )
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Režim igre", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DifficultyButton(
+                        label = "Standard",
+                        selected = difficultyMode == DifficultyMode.STANDARD,
+                        onClick = { onDifficultyChange(DifficultyMode.STANDARD) }
+                    )
+                    DifficultyButton(
+                        label = "Za decu",
+                        selected = difficultyMode == DifficultyMode.KIDS,
+                        onClick = { onDifficultyChange(DifficultyMode.KIDS) }
+                    )
+                }
+            }
         }
-        Text("Trajanje partije: ${roundDurationSec}s")
-        Slider(
-            value = roundDurationSec.toFloat(),
-            onValueChange = { onRoundDurationChange(it.toInt()) },
-            valueRange = 75f..180f,
-            steps = 6
-        )
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Trajanje partije", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("${roundDurationSec}s", style = MaterialTheme.typography.headlineSmall)
+                Slider(
+                    value = roundDurationSec.toFloat(),
+                    onValueChange = { onRoundDurationChange(it.toInt()) },
+                    valueRange = 75f..180f,
+                    steps = 6
+                )
+                Text("Opseg: 75s - 180s", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
         val modeRulesText = if (difficultyMode == DifficultyMode.STANDARD) {
             "Standard: 4 mala (1-9), 1 srednji (10/15/20), 1 veliki (25/50/75/100), cilj 100-999."
         } else {
-            "Za decu: 3 mala (1-9) + 1 srednji (10/15/20), cilj do 100."
+            "Za decu: 3 mala (1-9) + 1 srednji (10/15/20), lakši cilj i operatori + i -."
         }
-        Text(modeRulesText)
-        Button(onClick = onBack) { Text("Sačuvaj i nazad") }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Aktivna pravila režima", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(modeRulesText)
+            }
+        }
+        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Sačuvaj i nazad") }
+    }
+}
+
+@Composable
+private fun IconPreviewScreen(onBack: () -> Unit) {
+    val options = listOf(
+        "Aktivna (trenutna)" to R.drawable.ic_launcher_foreground,
+        "Minimal" to R.drawable.ic_launcher_foreground_minimal,
+        "Calculator" to R.drawable.ic_launcher_foreground_calculator,
+        "Kids" to R.drawable.ic_launcher_foreground_kids,
+        "TV Slagalica" to R.drawable.ic_launcher_foreground_tv
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Pregled ikonica", style = MaterialTheme.typography.headlineMedium)
+        Text("Ovde vidiš sve varijante na jednom mestu.")
+        options.forEach { (label, iconRes) ->
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(iconRes),
+                        contentDescription = label,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("Drawable: ${iconRes}")
+                    }
+                }
+            }
+        }
+        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Nazad") }
     }
 }
 
@@ -194,7 +323,11 @@ private fun GameScreen(
     onExitGame: () -> Unit
 ) {
     val round = state.currentRound ?: return
-    val operatorButtons = listOf("+", "-", "*", "/", "(", ")")
+    val operatorButtons = if (state.difficultyMode == DifficultyMode.KIDS) {
+        listOf("+", "-")
+    } else {
+        listOf("+", "-", "*", "/", "(", ")")
+    }
     val numbersColumns = if (round.numbers.size <= 4) 2 else 3
     val numbersGridHeight = if (round.numbers.size <= 4) 130.dp else 170.dp
     val numbersButtonAspect = if (round.numbers.size <= 4) 3.0f else 1.9f
@@ -202,6 +335,7 @@ private fun GameScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -267,7 +401,7 @@ private fun GameScreen(
         Text("Operatori", style = MaterialTheme.typography.titleMedium)
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            modifier = Modifier.height(150.dp),
+            modifier = Modifier.height(if (operatorButtons.size <= 2) 70.dp else 150.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -311,6 +445,7 @@ private fun ResultScreen(state: UiState, onPlayAgain: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)

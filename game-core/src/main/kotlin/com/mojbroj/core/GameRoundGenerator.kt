@@ -36,8 +36,13 @@ class GameRoundGenerator(
 
         val target = when (mode) {
             DifficultyMode.STANDARD -> random.nextInt(100, 1000)
-            DifficultyMode.KIDS -> random.nextInt(10, 101)
+            DifficultyMode.KIDS -> generateKidsTarget(numbers)
         }
         return GameRound(target = target, numbers = numbers)
+    }
+
+    private fun generateKidsTarget(numbers: List<Int>): Int {
+        val count = random.nextInt(2, numbers.size + 1)
+        return numbers.shuffled(random).take(count).sum()
     }
 }
