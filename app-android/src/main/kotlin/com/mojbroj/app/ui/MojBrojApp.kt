@@ -146,7 +146,7 @@ private fun RulesScreen(onBack: () -> Unit) {
             ) {
                 Text("Brojevi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text("• Standard: 4 mala (1-9), 1 srednji (10/15/20), 1 veliki (25/50/75/100)")
-                Text("• Za decu: 3 mala (1-9), 1 srednji (10/15/20), lakši cilj i samo + / -")
+                Text("• Za decu: 4 mala (1-9), 1 srednji (10/15/20), cilj 10-100, operatori + - * / i zagrade")
             }
         }
 
@@ -236,7 +236,7 @@ private fun SettingsScreen(
         val modeRulesText = if (difficultyMode == DifficultyMode.STANDARD) {
             "Standard: 4 mala (1-9), 1 srednji (10/15/20), 1 veliki (25/50/75/100), cilj 100-999."
         } else {
-            "Za decu: 3 mala (1-9) + 1 srednji (10/15/20), lakši cilj i operatori + i -."
+            "Za decu: 4 mala (1-9) + 1 srednji (10/15/20), cilj 10-100 i operatori +, -, *, /, ( )."
         }
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -324,7 +324,7 @@ private fun GameScreen(
 ) {
     val round = state.currentRound ?: return
     val operatorButtons = if (state.difficultyMode == DifficultyMode.KIDS) {
-        listOf("+", "-")
+        listOf("+", "-", "*", "/", "(", ")")
     } else {
         listOf("+", "-", "*", "/", "(", ")")
     }
@@ -401,7 +401,7 @@ private fun GameScreen(
         Text("Operatori", style = MaterialTheme.typography.titleMedium)
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            modifier = Modifier.height(if (operatorButtons.size <= 2) 70.dp else 150.dp),
+            modifier = Modifier.height(if (operatorButtons.size <= 4) 110.dp else 150.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

@@ -21,8 +21,9 @@ Mobilna igra inspirisana igrom "Moj broj", napravljena kao Kotlin/Jetpack Compos
 - Cilj: `100-999`
 
 ### Za decu
-- Brojevi: `3 mala (1-9) + 1 srednji (10/15/20)`
+- Brojevi: `4 mala (1-9) + 1 srednji (10/15/20)`
 - Cilj: `10-100`
+- Operacije: `+`, `-`, `*`, `/`, `(`, `)`
 
 ### Operacije i validacija
 - Dozvoljeno: `+`, `-`, `*`, `/`, `(`, `)`
@@ -70,6 +71,53 @@ gradle test
 # lint (android)
 gradle :app-android:lintDebug
 ```
+
+## Verzija i changelog
+
+- Izvor istine za app verziju je `version.properties`.
+- Changelog vodi se u `CHANGELOG.md`.
+
+Primer bump-a za novu verziju:
+
+1. U `version.properties` povećaj:
+   - `VERSION_CODE` (uvek +1)
+   - `VERSION_NAME` (npr. `1.1.1` ili `1.2.0`)
+2. Dodaj stavke u `CHANGELOG.md` pod `Unreleased`.
+3. Pred release prebaci `Unreleased` stavke u novu sekciju sa datumom.
+4. Napravi release build (`assembleRelease`).
+
+## Signed release APK (za deljenje)
+
+1. Generiši keystore (jednom):
+
+```bash
+keytool -genkeypair -v -keystore mojbroj-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias mojbroj
+```
+
+2. Kopiraj template i popuni realne vrednosti:
+
+```bash
+cp keystore.properties.example keystore.properties
+```
+
+Primer `keystore.properties`:
+
+```properties
+storeFile=mojbroj-release.jks
+storePassword=your_store_password
+keyAlias=mojbroj
+keyPassword=your_key_password
+```
+
+3. Napravi release APK:
+
+```bash
+gradle :app-android:assembleRelease
+```
+
+APK izlaz:
+
+`app-android/build/outputs/apk/release/app-android-release.apk`
 
 ## Napomena
 

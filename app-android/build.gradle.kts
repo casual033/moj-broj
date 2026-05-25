@@ -1,7 +1,25 @@
+import java.io.File
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+val hasKeystoreProperties = keystorePropertiesFile.exists()
+if (hasKeystoreProperties) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
+
+val versionPropertiesFile = rootProject.file("version.properties")
+val versionProperties = Properties()
+if (versionPropertiesFile.exists()) {
+    versionPropertiesFile.inputStream().use { versionProperties.load(it) }
+}
+val appVersionCode = (versionProperties.getProperty("VERSION_CODE") ?: "1").toInt()
+val appVersionName = versionProperties.getProperty("VERSION_NAME") ?: "1.0.0"
 
 android {
     namespace = "com.mojbroj.app"
@@ -11,8 +29,8 @@ android {
         applicationId = "com.mojbroj.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -20,9 +38,28 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasKeystoreProperties) {
+            create("release") {
+                val configuredStoreFile = keystoreProperties["storeFile"] as String
+                storeFile = if (File(configuredStoreFile).isAbsolute) {
+                    file(configuredStoreFile)
+                } else {
+                    rootProject.file(configuredStoreFile)
+                }
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (hasKeystoreProperties) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

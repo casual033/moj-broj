@@ -37,10 +37,10 @@ class GameRoundGeneratorTest {
         val smallCount = round.numbers.count { it in 1..9 }
         val largeCount = round.numbers.count { it in listOf(25, 50, 75, 100) }
 
-        assertEquals(4, round.numbers.size)
+        assertEquals(5, round.numbers.size)
         assertEquals(1, mediumCount)
-        assertEquals(3, smallCount)
+        assertEquals(4, smallCount)
         assertEquals(0, largeCount)
-        assertTrue(round.target in 2..47)
+        assertTrue(round.target in 10..100)
     }
 }
