@@ -26,7 +26,6 @@ enum class AppScreen {
     HOME,
     RULES,
     SETTINGS,
-    ICONS,
     GAME,
     RESULT
 }
@@ -84,17 +83,18 @@ class MojBrojViewModel(
         _uiState.update { it.copy(screen = AppScreen.SETTINGS) }
     }
 
-    fun openIconPreview() {
-        _uiState.update { it.copy(screen = AppScreen.ICONS) }
-    }
-
     fun updateRoundDuration(value: Int) {
-        val normalized = value.coerceIn(75, 180)
+        val normalized = value.coerceIn(30, 300)
         _uiState.update { it.copy(roundDurationSec = normalized, timerSec = normalized) }
     }
 
     fun updateDifficultyMode(mode: DifficultyMode) {
         _uiState.update { it.copy(difficultyMode = mode) }
+    }
+
+    fun startGame(mode: DifficultyMode) {
+        _uiState.update { it.copy(difficultyMode = mode) }
+        startNewGame()
     }
 
     fun startNewGame() {
