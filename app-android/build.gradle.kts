@@ -23,12 +23,12 @@ val appVersionName = versionProperties.getProperty("VERSION_NAME") ?: "1.0.0"
 
 android {
     namespace = "com.mojbroj.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.mojbroj.app"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = appVersionCode
         versionName = appVersionName
 

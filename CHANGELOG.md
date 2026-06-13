@@ -7,6 +7,12 @@ and this project follows semantic versioning where practical.
 
 ## [Unreleased]
 
+### Changed
+- Target Android 15 (API 35) and compile against SDK 35 for Google Play submission.
+
+### Added
+- Store assets in `store-assets/` (512 icon, 1024x500 feature graphic, privacy policy, listing copy).
+
 ## [1.2.0] - 2026-06-13
 
 ### Added
