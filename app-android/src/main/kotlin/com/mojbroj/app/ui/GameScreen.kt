@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -61,11 +62,23 @@ internal fun GameScreen(
                     IconCircleButton(Icons.Filled.Close, "Izađi iz partije", onExitGame)
                 },
                 trailing = {
-                    Pill(
-                        text = if (state.difficultyMode == DifficultyMode.KIDS) "Dečiji" else "Standard",
-                        leadingIcon = Icons.Filled.Star,
-                        iconTint = cs.tertiary
-                    )
+                    when {
+                        state.isDailyRound -> Pill(
+                            text = "Dnevni izazov",
+                            leadingIcon = Icons.Filled.Today,
+                            iconTint = cs.primary
+                        )
+                        state.difficultyMode == DifficultyMode.KIDS -> Pill(
+                            text = "Dečiji",
+                            leadingIcon = Icons.Filled.Star,
+                            iconTint = cs.tertiary
+                        )
+                        else -> Pill(
+                            text = "Standard",
+                            leadingIcon = Icons.Filled.Star,
+                            iconTint = cs.tertiary
+                        )
+                    }
                 }
             )
 

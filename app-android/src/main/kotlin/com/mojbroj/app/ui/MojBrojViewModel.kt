@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.mojbroj.app.data.DailyChallengeRepository
+import com.mojbroj.app.data.DailyChallengeState
 import com.mojbroj.app.data.PlayerStats
-import com.mojbroj.core.DifficultyMode
 import com.mojbroj.app.data.StatsRepository
+import com.mojbroj.app.data.currentEpochDay
+import com.mojbroj.core.DifficultyMode
 import com.mojbroj.core.GameRoundGenerator
 import com.mojbroj.core.SolutionEvaluator
 import com.mojbroj.core.Solver
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.random.Random
 
 enum class AppScreen {
     HOME,
@@ -49,9 +53,11 @@ data class UiState(
     val timerSec: Int = 90,
     val elapsedSec: Int = 0,
     val difficultyMode: DifficultyMode = DifficultyMode.STANDARD,
+    val isDailyRound: Boolean = false,
     val submitted: SubmittedSolution? = null,
     val solverResult: SolverResult? = null,
     val stats: PlayerStats = PlayerStats(),
+    val daily: DailyChallengeState = DailyChallengeState(),
     val validationError: String? = null
 ) {
     val expression: String get() = expressionTokens.joinToString("")
@@ -68,6 +74,7 @@ data class UiState(
 
 class MojBrojViewModel(
     private val statsRepository: StatsRepository,
+    private val dailyRepository: DailyChallengeRepository,
     private val roundGenerator: GameRoundGenerator = GameRoundGenerator(),
     private val solutionEvaluator: SolutionEvaluator = SolutionEvaluator(),
     private val solver: Solver = Solver(maxDurationMs = 1800L)
@@ -80,6 +87,11 @@ class MojBrojViewModel(
         viewModelScope.launch {
             statsRepository.stats.collect { stats ->
                 _uiState.update { it.copy(stats = stats) }
+            }
+        }
+        viewModelScope.launch {
+            dailyRepository.state.collect { daily ->
+                _uiState.update { it.copy(daily = daily) }
             }
         }
     }
@@ -111,17 +123,31 @@ class MojBrojViewModel(
     }
 
     fun startNewGame() {
-        timerJob?.cancel()
         val state = _uiState.value
         val round = roundGenerator.createRound(state.difficultyMode)
+        beginRound(round, isDaily = false)
+    }
+
+    fun startDailyChallenge() {
+        val todayEpochDay = currentEpochDay()
+        if (_uiState.value.daily.playedToday(todayEpochDay)) return
+        val round = GameRoundGenerator(Random(todayEpochDay)).createRound(DifficultyMode.STANDARD)
+        _uiState.update { it.copy(difficultyMode = DifficultyMode.STANDARD) }
+        beginRound(round, isDaily = true)
+    }
+
+    private fun beginRound(round: GameRound, isDaily: Boolean) {
+        timerJob?.cancel()
+        val state = _uiState.value
         _uiState.update {
             it.copy(
                 screen = AppScreen.GAME,
                 phase = RoundPhase.IN_PROGRESS,
                 currentRound = round,
                 expressionTokens = emptyList(),
-                timerSec = state.roundDurationSec,
+                timerSec = if (isDaily) DAILY_ROUND_DURATION_SEC else state.roundDurationSec,
                 elapsedSec = 0,
+                isDailyRound = isDaily,
                 submitted = null,
                 solverResult = null,
                 validationError = null
@@ -157,7 +183,7 @@ class MojBrojViewModel(
     }
 
     fun playAgain() {
-        _uiState.update { it.copy(screen = AppScreen.HOME, phase = RoundPhase.IDLE) }
+        _uiState.update { it.copy(screen = AppScreen.HOME, phase = RoundPhase.IDLE, isDailyRound = false) }
     }
 
     fun exitCurrentGame() {
@@ -170,6 +196,7 @@ class MojBrojViewModel(
                 expressionTokens = emptyList(),
                 timerSec = it.roundDurationSec,
                 elapsedSec = 0,
+                isDailyRound = false,
                 submitted = null,
                 solverResult = null,
                 validationError = null
@@ -220,6 +247,13 @@ class MojBrojViewModel(
                 isValid = submitted.isValid,
                 solveTimeSec = _uiState.value.elapsedSec
             )
+            if (state.isDailyRound) {
+                dailyRepository.recordResult(
+                    epochDay = currentEpochDay(),
+                    distance = if (submitted.isValid) submitted.distance else -1,
+                    isExact = isExact
+                )
+            }
 
             _uiState.update {
                 it.copy(
@@ -232,13 +266,18 @@ class MojBrojViewModel(
             }
         }
     }
+
+    companion object {
+        const val DAILY_ROUND_DURATION_SEC = 90
+    }
 }
 
 class MojBrojViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return MojBrojViewModel(
-            statsRepository = StatsRepository(context)
+            statsRepository = StatsRepository(context),
+            dailyRepository = DailyChallengeRepository(context)
         ) as T
     }
 }

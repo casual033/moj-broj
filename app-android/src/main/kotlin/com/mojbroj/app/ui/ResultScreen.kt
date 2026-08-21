@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -103,6 +104,10 @@ internal fun ResultScreen(state: UiState, onPlayAgain: () -> Unit) {
                     Text("Niz tačnih: ${state.stats.currentStreak}", style = MojBrojType.labelCaps, color = cs.tertiary)
                 }
             }
+            if (state.isDailyRound && state.daily.dailyStreak > 0) {
+                Spacer(Modifier.height(6.dp))
+                Text("Dnevni izazov • niz ${state.daily.dailyStreak}", style = MojBrojType.labelCaps, color = cs.primary)
+            }
             Spacer(Modifier.height(12.dp))
             Text("VAŠ REZULTAT", style = MojBrojType.labelCaps, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
@@ -156,10 +161,10 @@ internal fun ResultScreen(state: UiState, onPlayAgain: () -> Unit) {
 
             Spacer(Modifier.height(24.dp))
             PrimaryButton(
-                text = "NOVA IGRA",
+                text = if (state.isDailyRound) "POČETNA" else "NOVA IGRA",
                 onClick = onPlayAgain,
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = Icons.Filled.PlayArrow
+                leadingIcon = if (state.isDailyRound) Icons.Filled.Home else Icons.Filled.PlayArrow
             )
             Spacer(Modifier.height(12.dp))
             OutlineButton(

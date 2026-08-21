@@ -13,6 +13,7 @@ fun MojBrojApp(viewModel: MojBrojViewModel) {
             AppScreen.HOME -> HomeScreen(
                 state = state,
                 onStartGame = viewModel::startGame,
+                onDailyChallenge = viewModel::startDailyChallenge,
                 onRules = viewModel::openRules,
                 onSettings = viewModel::openSettings
             )
