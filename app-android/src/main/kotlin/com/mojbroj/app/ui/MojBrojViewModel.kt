@@ -47,6 +47,7 @@ data class UiState(
     val expressionTokens: List<String> = emptyList(),
     val roundDurationSec: Int = 90,
     val timerSec: Int = 90,
+    val elapsedSec: Int = 0,
     val difficultyMode: DifficultyMode = DifficultyMode.STANDARD,
     val submitted: SubmittedSolution? = null,
     val solverResult: SolverResult? = null,
@@ -54,6 +55,9 @@ data class UiState(
     val validationError: String? = null
 ) {
     val expression: String get() = expressionTokens.joinToString("")
+
+    /** Kids mode has no countdown; the round ends only on submit. */
+    val isTimedRound: Boolean get() = difficultyMode != DifficultyMode.KIDS
 
     /** True while the solver is computing the best solution off the main thread. */
     val isEvaluating: Boolean get() = phase == RoundPhase.SUBMITTED || phase == RoundPhase.TIME_UP
@@ -117,6 +121,7 @@ class MojBrojViewModel(
                 currentRound = round,
                 expressionTokens = emptyList(),
                 timerSec = state.roundDurationSec,
+                elapsedSec = 0,
                 submitted = null,
                 solverResult = null,
                 validationError = null
@@ -148,7 +153,7 @@ class MojBrojViewModel(
     fun submit() {
         val state = _uiState.value
         if (state.phase != RoundPhase.IN_PROGRESS) return
-        evaluateRound(state.timerSec, RoundPhase.SUBMITTED)
+        evaluateRound(RoundPhase.SUBMITTED)
     }
 
     fun playAgain() {
@@ -164,6 +169,7 @@ class MojBrojViewModel(
                 currentRound = null,
                 expressionTokens = emptyList(),
                 timerSec = it.roundDurationSec,
+                elapsedSec = 0,
                 submitted = null,
                 solverResult = null,
                 validationError = null
@@ -173,17 +179,26 @@ class MojBrojViewModel(
 
     private fun startTimer() {
         timerJob = viewModelScope.launch {
-            while (_uiState.value.timerSec > 0 && _uiState.value.phase == RoundPhase.IN_PROGRESS) {
+            while (_uiState.value.phase == RoundPhase.IN_PROGRESS) {
                 delay(1000)
-                _uiState.update { it.copy(timerSec = it.timerSec - 1) }
-            }
-            if (_uiState.value.phase == RoundPhase.IN_PROGRESS && _uiState.value.timerSec <= 0) {
-                evaluateRound(0, RoundPhase.TIME_UP)
+                if (_uiState.value.phase != RoundPhase.IN_PROGRESS) break
+                _uiState.update { state ->
+                    if (state.isTimedRound) {
+                        state.copy(timerSec = state.timerSec - 1, elapsedSec = state.elapsedSec + 1)
+                    } else {
+                        state.copy(elapsedSec = state.elapsedSec + 1)
+                    }
+                }
+                val state = _uiState.value
+                if (state.isTimedRound && state.timerSec <= 0 && state.phase == RoundPhase.IN_PROGRESS) {
+                    evaluateRound(RoundPhase.TIME_UP)
+                    break
+                }
             }
         }
     }
 
-    private fun evaluateRound(timeLeftSec: Int, submitPhase: RoundPhase) {
+    private fun evaluateRound(submitPhase: RoundPhase) {
         timerJob?.cancel()
         val state = _uiState.value
         val round = state.currentRound ?: return
@@ -198,12 +213,12 @@ class MojBrojViewModel(
                 submitted to solverResult
             }
 
-            val solvedInSec = state.roundDurationSec - timeLeftSec
+            val isExact = submitted.status == EvaluationStatus.EXACT
             statsRepository.recordGame(
                 distance = if (submitted.isValid) submitted.distance else 0,
-                isExact = submitted.status == EvaluationStatus.EXACT,
+                isExact = isExact,
                 isValid = submitted.isValid,
-                solveTimeSec = solvedInSec
+                solveTimeSec = _uiState.value.elapsedSec
             )
 
             _uiState.update {

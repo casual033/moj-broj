@@ -82,7 +82,7 @@ internal fun RulesScreen(onBack: () -> Unit, onStart: () -> Unit, onSettings: ()
                 icon = Icons.Filled.Timer,
                 accent = cs.error,
                 title = "VREMENSKI LIMIT",
-                body = "Dođi što bliže traženom broju pre nego što istekne vreme."
+                body = "Dođi što bliže traženom broju pre nego što istekne vreme. U dečijem modu nema vremenskog ograničenja."
             )
 
             Spacer(Modifier.height(8.dp))

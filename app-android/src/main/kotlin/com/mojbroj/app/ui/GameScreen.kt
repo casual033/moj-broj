@@ -46,14 +46,15 @@ internal fun GameScreen(
 ) {
     val cs = MaterialTheme.colorScheme
     val round = state.currentRound ?: return
-    val danger = state.timerSec < 10
+    val timed = state.isTimedRound
+    val danger = timed && state.timerSec < 10
 
     BackHandler(onBack = onExitGame)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             TopBar(
-                timerSec = state.timerSec,
+                timerSec = if (timed) state.timerSec else state.elapsedSec,
                 timerDanger = danger,
                 title = "",
                 leading = {
