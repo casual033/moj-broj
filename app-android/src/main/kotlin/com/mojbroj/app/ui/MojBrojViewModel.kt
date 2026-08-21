@@ -186,11 +186,11 @@ class MojBrojViewModel(
                 submitted to solverResult
             }
 
-            val effectiveDistance = if (submitted.isValid) submitted.distance else solverResult.distance
             val solvedInSec = state.roundDurationSec - timeLeftSec
             statsRepository.recordGame(
-                distance = effectiveDistance,
+                distance = if (submitted.isValid) submitted.distance else 0,
                 isExact = submitted.status == EvaluationStatus.EXACT,
+                isValid = submitted.isValid,
                 solveTimeSec = solvedInSec
             )
 
