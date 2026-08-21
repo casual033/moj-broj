@@ -51,6 +51,7 @@ data class UiState(
     val phase: RoundPhase = RoundPhase.IDLE,
     val currentRound: GameRound? = null,
     val expressionTokens: List<String> = emptyList(),
+    val usedTileIndices: List<Int> = emptyList(),
     val roundDurationSec: Int = 90,
     val timerSec: Int = 90,
     val elapsedSec: Int = 0,
@@ -69,9 +70,6 @@ data class UiState(
 
     /** True while the solver is computing the best solution off the main thread. */
     val isEvaluating: Boolean get() = phase == RoundPhase.SUBMITTED || phase == RoundPhase.TIME_UP
-
-    /** Numbers already consumed by the current expression. */
-    val usedNumbers: List<Int> get() = expressionTokens.mapNotNull { it.toIntOrNull() }
 }
 
 class MojBrojViewModel(
@@ -152,6 +150,7 @@ class MojBrojViewModel(
                 phase = RoundPhase.IN_PROGRESS,
                 currentRound = round,
                 expressionTokens = emptyList(),
+                usedTileIndices = emptyList(),
                 timerSec = if (isDaily) DAILY_ROUND_DURATION_SEC else state.roundDurationSec,
                 elapsedSec = 0,
                 isDailyRound = isDaily,
@@ -164,22 +163,35 @@ class MojBrojViewModel(
     }
 
     fun appendToken(token: String) {
+        if (_uiState.value.phase != RoundPhase.IN_PROGRESS) return
+        _uiState.update { it.copy(expressionTokens = it.expressionTokens + token, validationError = null) }
+    }
+
+    /** Adds the number from the tapped tile, so with duplicates exactly that tile is spent. */
+    fun appendNumber(tileIndex: Int) {
         val state = _uiState.value
         if (state.phase != RoundPhase.IN_PROGRESS) return
-        val number = token.toIntOrNull()
-        if (number != null) {
-            val round = state.currentRound ?: return
-            val available = round.numbers.count { it == number }
-            val used = state.usedNumbers.count { it == number }
-            if (used >= available) return
+        val round = state.currentRound ?: return
+        val number = round.numbers.getOrNull(tileIndex) ?: return
+        if (tileIndex in state.usedTileIndices) return
+        _uiState.update {
+            it.copy(
+                expressionTokens = it.expressionTokens + number.toString(),
+                usedTileIndices = it.usedTileIndices + tileIndex,
+                validationError = null
+            )
         }
-        _uiState.update { it.copy(expressionTokens = it.expressionTokens + token, validationError = null) }
     }
 
     fun removeLastToken() {
         if (_uiState.value.phase != RoundPhase.IN_PROGRESS) return
         _uiState.update { current ->
-            current.copy(expressionTokens = current.expressionTokens.dropLast(1), validationError = null)
+            val removedNumber = current.expressionTokens.lastOrNull()?.toIntOrNull() != null
+            current.copy(
+                expressionTokens = current.expressionTokens.dropLast(1),
+                usedTileIndices = if (removedNumber) current.usedTileIndices.dropLast(1) else current.usedTileIndices,
+                validationError = null
+            )
         }
     }
 
@@ -201,6 +213,7 @@ class MojBrojViewModel(
                 phase = RoundPhase.IDLE,
                 currentRound = null,
                 expressionTokens = emptyList(),
+                usedTileIndices = emptyList(),
                 timerSec = it.roundDurationSec,
                 elapsedSec = 0,
                 isDailyRound = false,

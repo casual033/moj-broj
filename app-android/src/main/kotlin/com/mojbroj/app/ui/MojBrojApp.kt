@@ -34,6 +34,7 @@ fun MojBrojApp(viewModel: MojBrojViewModel) {
             AppScreen.GAME -> GameScreen(
                 state = state,
                 onToken = viewModel::appendToken,
+                onNumber = viewModel::appendNumber,
                 onBackspace = viewModel::removeLastToken,
                 onSubmit = viewModel::submit,
                 onExitGame = viewModel::exitCurrentGame

@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -41,6 +40,7 @@ import com.mojbroj.core.DifficultyMode
 internal fun GameScreen(
     state: UiState,
     onToken: (String) -> Unit,
+    onNumber: (Int) -> Unit,
     onBackspace: () -> Unit,
     onSubmit: () -> Unit,
     onExitGame: () -> Unit
@@ -127,7 +127,7 @@ internal fun GameScreen(
                 }
 
                 // Number board
-                NumberBoard(numbers = round.numbers, usedNumbers = state.usedNumbers, onToken = onToken)
+                NumberBoard(numbers = round.numbers, usedIndices = state.usedTileIndices, onNumber = onNumber)
                 Spacer(Modifier.height(4.dp))
             }
 
@@ -185,44 +185,32 @@ internal fun GameScreen(
 }
 
 @Composable
-private fun NumberBoard(numbers: List<Int>, usedNumbers: List<Int>, onToken: (String) -> Unit) {
+private fun NumberBoard(numbers: List<Int>, usedIndices: List<Int>, onNumber: (Int) -> Unit) {
     val cs = MaterialTheme.colorScheme
-    // Mark one tile as spent for every occurrence of its value in the expression.
-    val remainingUses = usedNumbers.groupingBy { it }.eachCount().toMutableMap()
-    val tileEnabled = numbers.map { number ->
-        val pending = remainingUses[number] ?: 0
-        if (pending > 0) {
-            remainingUses[number] = pending - 1
-            false
-        } else {
-            true
-        }
-    }
-
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         numbers.chunked(3).forEachIndexed { rowIndex, rowNumbers ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 rowNumbers.forEachIndexed { colIndex, number ->
-                    val enabled = tileEnabled[rowIndex * 3 + colIndex]
-                    val big = number >= 25
+                    val tileIndex = rowIndex * 3 + colIndex
+                    val enabled = tileIndex !in usedIndices
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp)
-                            .alpha(if (enabled) 1f else 0.35f)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(if (big) cs.primaryContainer else cs.surfaceContainerHigh)
-                            .then(
-                                if (big) Modifier.border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
-                                else Modifier
+                            .background(if (enabled) cs.surfaceContainerHigh else cs.surfaceContainerLowest)
+                            .border(
+                                1.dp,
+                                if (enabled) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.04f),
+                                RoundedCornerShape(16.dp)
                             )
-                            .clickable(enabled = enabled) { onToken(number.toString()) },
+                            .clickable(enabled = enabled) { onNumber(tileIndex) },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             number.toString(),
                             style = MojBrojType.numberTile,
-                            color = if (big) cs.onPrimaryContainer else cs.onSurface
+                            color = if (enabled) cs.onSurface else cs.onSurface.copy(alpha = 0.25f)
                         )
                     }
                 }
