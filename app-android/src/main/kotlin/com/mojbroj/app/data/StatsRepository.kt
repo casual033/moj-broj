@@ -16,6 +16,7 @@ data class PlayerStats(
     val validGames: Int = 0,
     val exactSolutions: Int = 0,
     val avgDistance: Float = 0f,
+    val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val avgSolveTimeSec: Float = 0f
 )
@@ -37,6 +38,7 @@ class StatsRepository(private val context: Context) {
             validGames = prefs[Keys.validGames] ?: 0,
             exactSolutions = prefs[Keys.exactSolutions] ?: 0,
             avgDistance = prefs[Keys.avgDistance] ?: 0f,
+            currentStreak = prefs[Keys.currentStreak] ?: 0,
             bestStreak = prefs[Keys.bestStreak] ?: 0,
             avgSolveTimeSec = prefs[Keys.avgSolveTimeSec] ?: 0f
         )

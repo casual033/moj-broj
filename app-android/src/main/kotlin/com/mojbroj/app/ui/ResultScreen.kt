@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.HighlightOff
 import androidx.compose.material.icons.outlined.TrackChanges
@@ -95,6 +96,13 @@ internal fun ResultScreen(state: UiState, onPlayAgain: () -> Unit) {
             }
             Spacer(Modifier.height(16.dp))
             Text(headline, style = MojBrojType.headlineLgMobile, color = cs.onBackground)
+            if (status == EvaluationStatus.EXACT && state.stats.currentStreak > 0) {
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Filled.Whatshot, contentDescription = null, tint = cs.tertiary, modifier = Modifier.size(18.dp))
+                    Text("Niz tačnih: ${state.stats.currentStreak}", style = MojBrojType.labelCaps, color = cs.tertiary)
+                }
+            }
             Spacer(Modifier.height(12.dp))
             Text("VAŠ REZULTAT", style = MojBrojType.labelCaps, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))

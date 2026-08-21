@@ -112,6 +112,9 @@ internal fun SettingsScreen(
                     StatRow("Odigrano partija", stats.totalGames.toString())
                     StatRow("Tačnih rešenja", stats.exactSolutions.toString())
                     StatRow("Prosečna razlika", "%.1f".format(Locale.US, stats.avgDistance))
+                    StatRow("Trenutni niz", stats.currentStreak.toString())
+                    StatRow("Najbolji niz", stats.bestStreak.toString())
+                    StatRow("Prosečno vreme", formatTime(stats.avgSolveTimeSec.toInt()))
                 }
             }
 
