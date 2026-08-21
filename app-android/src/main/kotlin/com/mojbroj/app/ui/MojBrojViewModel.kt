@@ -17,8 +17,10 @@ import com.mojbroj.core.model.EvaluationStatus
 import com.mojbroj.core.model.GameRound
 import com.mojbroj.core.model.SolverResult
 import com.mojbroj.core.model.SubmittedSolution
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,6 +85,10 @@ class MojBrojViewModel(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
     private var timerJob: Job? = null
 
+    // Solving starts as soon as the round begins, so the result is usually
+    // ready by the time the player submits.
+    private var solverDeferred: Deferred<SolverResult>? = null
+
     init {
         viewModelScope.launch {
             statsRepository.stats.collect { stats ->
@@ -138,6 +144,7 @@ class MojBrojViewModel(
 
     private fun beginRound(round: GameRound, isDaily: Boolean) {
         timerJob?.cancel()
+        solverDeferred = viewModelScope.async(Dispatchers.Default) { solver.solve(round) }
         val state = _uiState.value
         _uiState.update {
             it.copy(
@@ -234,11 +241,11 @@ class MojBrojViewModel(
         _uiState.update { it.copy(phase = submitPhase) }
 
         viewModelScope.launch {
-            val (submitted, solverResult) = withContext(Dispatchers.Default) {
-                val submitted = solutionEvaluator.evaluate(round, expression)
-                val solverResult = solver.solve(round)
-                submitted to solverResult
+            val submitted = withContext(Dispatchers.Default) {
+                solutionEvaluator.evaluate(round, expression)
             }
+            val solverResult = solverDeferred?.await()
+                ?: withContext(Dispatchers.Default) { solver.solve(round) }
 
             val isExact = submitted.status == EvaluationStatus.EXACT
             statsRepository.recordGame(
