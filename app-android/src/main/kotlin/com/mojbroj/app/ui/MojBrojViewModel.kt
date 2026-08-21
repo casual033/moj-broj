@@ -44,7 +44,7 @@ data class UiState(
     val screen: AppScreen = AppScreen.HOME,
     val phase: RoundPhase = RoundPhase.IDLE,
     val currentRound: GameRound? = null,
-    val expression: String = "",
+    val expressionTokens: List<String> = emptyList(),
     val roundDurationSec: Int = 90,
     val timerSec: Int = 90,
     val difficultyMode: DifficultyMode = DifficultyMode.STANDARD,
@@ -53,8 +53,13 @@ data class UiState(
     val stats: PlayerStats = PlayerStats(),
     val validationError: String? = null
 ) {
+    val expression: String get() = expressionTokens.joinToString("")
+
     /** True while the solver is computing the best solution off the main thread. */
     val isEvaluating: Boolean get() = phase == RoundPhase.SUBMITTED || phase == RoundPhase.TIME_UP
+
+    /** Numbers already consumed by the current expression. */
+    val usedNumbers: List<Int> get() = expressionTokens.mapNotNull { it.toIntOrNull() }
 }
 
 class MojBrojViewModel(
@@ -110,7 +115,7 @@ class MojBrojViewModel(
                 screen = AppScreen.GAME,
                 phase = RoundPhase.IN_PROGRESS,
                 currentRound = round,
-                expression = "",
+                expressionTokens = emptyList(),
                 timerSec = state.roundDurationSec,
                 submitted = null,
                 solverResult = null,
@@ -121,15 +126,22 @@ class MojBrojViewModel(
     }
 
     fun appendToken(token: String) {
-        if (_uiState.value.phase != RoundPhase.IN_PROGRESS) return
-        _uiState.update { it.copy(expression = it.expression + token, validationError = null) }
+        val state = _uiState.value
+        if (state.phase != RoundPhase.IN_PROGRESS) return
+        val number = token.toIntOrNull()
+        if (number != null) {
+            val round = state.currentRound ?: return
+            val available = round.numbers.count { it == number }
+            val used = state.usedNumbers.count { it == number }
+            if (used >= available) return
+        }
+        _uiState.update { it.copy(expressionTokens = it.expressionTokens + token, validationError = null) }
     }
 
     fun removeLastToken() {
         if (_uiState.value.phase != RoundPhase.IN_PROGRESS) return
         _uiState.update { current ->
-            val next = if (current.expression.isNotEmpty()) current.expression.dropLast(1) else ""
-            current.copy(expression = next, validationError = null)
+            current.copy(expressionTokens = current.expressionTokens.dropLast(1), validationError = null)
         }
     }
 
@@ -150,7 +162,7 @@ class MojBrojViewModel(
                 screen = AppScreen.HOME,
                 phase = RoundPhase.IDLE,
                 currentRound = null,
-                expression = "",
+                expressionTokens = emptyList(),
                 timerSec = it.roundDurationSec,
                 submitted = null,
                 solverResult = null,
