@@ -14,6 +14,7 @@ import com.mojbroj.core.model.EvaluationStatus
 import com.mojbroj.core.model.GameRound
 import com.mojbroj.core.model.SolverResult
 import com.mojbroj.core.model.SubmittedSolution
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class AppScreen {
     HOME,
@@ -35,7 +37,6 @@ enum class RoundPhase {
     IN_PROGRESS,
     SUBMITTED,
     TIME_UP,
-    EVALUATED,
     RESULT_SHOWN
 }
 
@@ -51,7 +52,10 @@ data class UiState(
     val solverResult: SolverResult? = null,
     val stats: PlayerStats = PlayerStats(),
     val validationError: String? = null
-)
+) {
+    /** True while the solver is computing the best solution off the main thread. */
+    val isEvaluating: Boolean get() = phase == RoundPhase.SUBMITTED || phase == RoundPhase.TIME_UP
+}
 
 class MojBrojViewModel(
     private val statsRepository: StatsRepository,
@@ -171,30 +175,34 @@ class MojBrojViewModel(
         timerJob?.cancel()
         val state = _uiState.value
         val round = state.currentRound ?: return
+        val expression = state.expression
 
         _uiState.update { it.copy(phase = submitPhase) }
 
-        val submitted = solutionEvaluator.evaluate(round, state.expression)
-        val solverResult = solver.solve(round)
-
-        val effectiveDistance = if (submitted.isValid) submitted.distance else solverResult.distance
-        val solvedInSec = state.roundDurationSec - timeLeftSec
         viewModelScope.launch {
+            val (submitted, solverResult) = withContext(Dispatchers.Default) {
+                val submitted = solutionEvaluator.evaluate(round, expression)
+                val solverResult = solver.solve(round)
+                submitted to solverResult
+            }
+
+            val effectiveDistance = if (submitted.isValid) submitted.distance else solverResult.distance
+            val solvedInSec = state.roundDurationSec - timeLeftSec
             statsRepository.recordGame(
                 distance = effectiveDistance,
                 isExact = submitted.status == EvaluationStatus.EXACT,
                 solveTimeSec = solvedInSec
             )
-        }
 
-        _uiState.update {
-            it.copy(
-                phase = RoundPhase.RESULT_SHOWN,
-                screen = AppScreen.RESULT,
-                submitted = submitted,
-                solverResult = solverResult,
-                validationError = if (!submitted.isValid) "Nevalidan izraz ili nedozvoljeni brojevi." else null
-            )
+            _uiState.update {
+                it.copy(
+                    phase = RoundPhase.RESULT_SHOWN,
+                    screen = AppScreen.RESULT,
+                    submitted = submitted,
+                    solverResult = solverResult,
+                    validationError = if (!submitted.isValid) "Nevalidan izraz ili nedozvoljeni brojevi." else null
+                )
+            }
         }
     }
 }
