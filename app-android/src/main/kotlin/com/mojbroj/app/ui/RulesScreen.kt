@@ -1,5 +1,6 @@
 package com.mojbroj.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,9 @@ import com.mojbroj.app.ui.theme.MojBrojType
 @Composable
 internal fun RulesScreen(onBack: () -> Unit, onStart: () -> Unit, onSettings: () -> Unit) {
     val cs = MaterialTheme.colorScheme
+
+    BackHandler(onBack = onBack)
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar(
             title = "Pravila",

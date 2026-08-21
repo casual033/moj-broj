@@ -1,5 +1,6 @@
 package com.mojbroj.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,6 +47,8 @@ internal fun GameScreen(
     val cs = MaterialTheme.colorScheme
     val round = state.currentRound ?: return
     val danger = state.timerSec < 10
+
+    BackHandler(onBack = onExitGame)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {

@@ -1,5 +1,6 @@
 package com.mojbroj.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,9 @@ internal fun SettingsScreen(
     onRules: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
+
+    BackHandler(onBack = onBack)
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar(
             title = "Podešavanja",

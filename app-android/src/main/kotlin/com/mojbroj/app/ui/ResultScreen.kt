@@ -1,6 +1,7 @@
 package com.mojbroj.app.ui
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +55,8 @@ internal fun ResultScreen(state: UiState, onPlayAgain: () -> Unit) {
         EvaluationStatus.INVALID -> Triple("Probaj ponovo", cs.error, Icons.Outlined.HighlightOff)
     }
     val resultValue = submitted?.result
+
+    BackHandler(onBack = onPlayAgain)
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopBar(
